@@ -5,3 +5,4 @@ dist/
 .env.local
 .cursor/mcp.json
 .mcp.json
+mcp-server/sandbox-ui/
