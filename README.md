@@ -1,22 +1,185 @@
 # The Council
 
-**An Among Us-themed AI agent council that turns single-agent planning into structured multi-perspective debate.**
+**A decision layer for AI agents — structured multi-perspective deliberation via MCP.**
 
 > _"Build me Cursor, make no mistakes."_
 >
 > One prompt. Four crewmates. One plan survives.
 
-Built for [Cursor Hack London 2026](https://cursorhacklondon2026.vercel.app/) — Track C: Agent Runtime Tools (Bounty #08)
+Built for [Cursor Hack London 2026](https://cursorhacklondon2026.vercel.app/) | **Track C: Agent Runtime Tools** | **Bounty #08**
 
 ---
 
-## Install (one command)
+## The Problem
+
+When you ask an AI agent to plan a complex project, you get **one unchallenged perspective**. The agent produces a confident-sounding plan and nobody questions whether step 3 is actually five steps, whether the dependency order is wrong, or whether a better library exists.
+
+Real engineering teams don't work this way. A plan gets challenged by the person who wants to ship fast, the person who's paranoid about failure modes, the person who knows the ecosystem, and the person who thinks in systems. The tension between these perspectives is what produces good plans.
+
+**Single-agent planning has no tension. The Council adds it.**
+
+## The Track: Agent Runtime Tools
+
+> *"Tools that improve how agents choose models, use MCPs, invoke skills, or reason about decisions."*
+> — Cursor Hack London 2026, Track C
+
+The Council is a **runtime primitive** — an MCP server that any agent can call to get a decision evaluated through structured disagreement. It's not a workflow or a business app. It's a tool that makes agents reason better before they act.
+
+**Bounty #08: "Make agents justify their decisions before they act"**
+
+Acceptance criteria:
+- Decision pulls from 2+ external quality signals *(recon phase: web search + context gathering)*
+- System explains its recommendation in a way a human can review *(full deliberation transcript with per-member reasoning)*
+- Chosen action is actually executed or prepared automatically *(synthesized plan returned to calling agent)*
+
+## How We Solve It
+
+### The Core Insight: Structural Isolation Prevents Convergence
+
+The #1 problem with multi-agent systems is that LLM agents **converge to the same answer**. When Agent B sees Agent A's reasoning, B's most likely completion is "I agree because..." — it's the path of least resistance in the probability distribution.
+
+The Council prevents this architecturally, not with prompt tricks:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    ROUND 1: ISOLATION                        │
+│                                                              │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐       │
+│  │  RAZOR   │ │  GHOST   │ │  SCOUT   │ │  BISHOP  │       │
+│  │          │ │          │ │          │ │          │       │
+│  │ Sees:    │ │ Sees:    │ │ Sees:    │ │ Sees:    │       │
+│  │ • prompt │ │ • prompt │ │ • prompt │ │ • prompt │       │
+│  │ • context│ │ • context│ │ • context│ │ • context│       │
+│  │ • plan   │ │ • plan   │ │ • plan   │ │ • plan   │       │
+│  │          │ │          │ │          │ │          │       │
+│  │ CANNOT   │ │ CANNOT   │ │ CANNOT   │ │ CANNOT   │       │
+│  │ see any  │ │ see any  │ │ see any  │ │ see any  │       │
+│  │ other    │ │ other    │ │ other    │ │ other    │       │
+│  │ member   │ │ member   │ │ member   │ │ member   │       │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘       │
+│       │            │            │            │              │
+│       ▼            ▼            ▼            ▼              │
+│              ALL VOTES REVEALED SIMULTANEOUSLY              │
+│                                                              │
+│  If unanimous → skip to synthesis                           │
+│  If split → ROUND 2: challenges + rebuttals                │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Three mechanisms enforce diversity:**
+
+1. **Forced evaluation frameworks** — Each member MUST answer different questions before forming a position. Different questions → different reasoning chains → different votes.
+
+2. **Defection penalty** — Changing your vote between rounds costs reputation. The Reaper tracks defections. This structurally prevents bandwagoning.
+
+3. **Structured output** — JSON responses, not essays. Votes are counted, not paragraphs. No agent can "out-talk" another.
+
+### The Pipeline
+
+```
+User prompt ("build me Cursor")
+    │
+    ▼
+┌─────────────────┐
+│  RECON           │  Extract topics → parallel web searches → context brief
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  NAIVE PLAN      │  Single-agent baseline (the "before" — deliberately unchallenged)
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  ROUND 1         │  4 parallel LLM calls, completely isolated
+│  (isolation)     │  Each member answers their framework questions
+│                  │  Each proposes critique + revised plan + vote
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  ROUND 2         │  All positions revealed simultaneously
+│  (challenges)    │  Each member challenges ONE other member
+│                  │  Each submits final vote (hold or defect)
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  VERDICT         │  Weighted vote: confidence × track record
+│                  │  Dissenting opinions preserved
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  SYNTHESIS       │  Neutral "clerk" compiles all critiques into
+│                  │  a structured plan with attributions
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  REAPER          │  Every 5 decisions: worst performer executed
+│  (evolution)     │  New member spawns with mutated traits from top performer
+└─────────────────┘
+```
+
+### The Council Members
+
+Each member has a **forced evaluation framework** — specific questions they must answer before forming any position. This is the key anti-convergence mechanism: even with the same LLM, asking different questions produces different reasoning.
+
+| Member | Archetype | Framework Questions |
+|--------|-----------|-------------------|
+| **RAZOR** (Red) | The Shipper | Fastest path to working implementation? Where does the plan hide complexity? What can be deferred to v2? Realistic effort estimates? |
+| **GHOST** (Purple) | The Paranoid | What fails at 10x load? Rollback plan for each step? Which dependencies could break? What error cases are unhandled? |
+| **SCOUT** (Green) | The Researcher | What existing solutions solve this? What do benchmarks say? What's the adoption trajectory? What prior art is being ignored? |
+| **BISHOP** (Yellow) | The Architect | What's the dependency graph after execution? Does this create coupling? Correct step ordering? What layers should be defined? |
+
+**Natural 2v2 tensions:** RAZOR+SCOUT ("just use the library and ship") vs GHOST+BISHOP ("build it properly with guardrails"). This is how real engineering teams function.
+
+### The Reaper (Evolutionary Pressure)
+
+Every 5 decisions, the council evolves:
+
+```
+score = (wins + override_matches) / total_decisions - (defections × 0.5 / total)
+
+If lowest score < 0.3:
+  → EXECUTE lowest performer
+  → SPAWN replacement with:
+    - Random base archetype
+    - One framework question inherited from top performer
+    - Lineage tracked: "GHOST-v3 (paranoid + RAZOR traits)"
+```
+
+Bad reasoning patterns get culled. Successful traits propagate. The council adapts to the human's actual preferences through the `council_override` feedback loop.
+
+### The Sandbox (Among Us Visualization)
+
+The entire deliberation is visualized in real-time as an Among Us emergency meeting:
+
+- **Recon phase** — Crewmates hustle between research stations (WEB SEARCH, DOCS, BENCHMARKS, GITHUB) with animated screens and data conduit lines
+- **Round 1** — Crewmates walk to isolation pods with lock icons, speech bubbles show critiques
+- **Round 2** — Crewmates converge on a wooden meeting table for debate, challenge lines connect members
+- **Voting** — Vote bars fill with colored member dots, defection warnings flash
+- **Synthesis** — Crewmates orbit the center as data particles flow into a central document that types itself with color-coded attributions
+- **Reaper** — Red vignette, lowest performer dragged to the gallows, new member spawns
+
+The sandbox is served directly by the MCP server — no separate process needed. Browser opens automatically on first `council_plan` call.
+
+## MCP Interface
+
+```
+council_plan        Submit a prompt for full council deliberation
+council_members     View current roster, stats, and lineage
+council_history     Past decisions with vote breakdowns
+council_override    Human corrects a verdict (feeds reaper scoring)
+council_sandbox     Open the live visualization
+```
+
+Any MCP client (Cursor, Claude Code, etc.) can call these tools. The council is editor-agnostic.
+
+## Install
+
+**One command:**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ViktorSmirnov71/the-council/main/setup.sh | bash
 ```
 
-Or manually:
+**Or manually:**
 
 ```bash
 git clone https://github.com/ViktorSmirnov71/the-council.git
@@ -30,155 +193,63 @@ Then open the folder in **Cursor** or **Claude Code** and ask:
 
 > _"Use council_plan to plan: build me Cursor, make no mistakes"_
 
-The Among Us sandbox opens automatically in your browser.
-
----
-
-## What Is This?
-
-The Council is an MCP server that intercepts planning requests and runs them through a deliberation sandbox before a single line of code is written.
-
-Instead of one agent producing one unchallenged plan, The Council spawns four AI crewmates — each with a distinct engineering perspective — who critique, debate, and vote on the plan in real-time. The worst-performing council members get executed. New ones are born. The council evolves.
-
-**The sandbox is visualized as an Among Us emergency meeting**, complete with crewmates around a table, speech bubbles, vote bars, and a gallows for underperformers.
-
-## How It Works
-
-```
-User prompt
-    │
-    ▼
-┌─────────────┐
-│   RECON      │  Web searches gather real-world context
-└──────┬──────┘
-       ▼
-┌─────────────┐
-│  NAIVE PLAN  │  Single-agent baseline plan (the "before")
-└──────┬──────┘
-       ▼
-┌─────────────────────────────────────────┐
-│         EMERGENCY MEETING               │
-│                                         │
-│   🟥 RAZOR    🟦 GHOST                  │
-│   The Shipper  The Paranoid             │
-│                                         │
-│        ┌──────────────┐                 │
-│        │ MEETING TABLE │                │
-│        └──────────────┘                 │
-│                                         │
-│   🟩 SCOUT    🟨 BISHOP                 │
-│   The Researcher The Architect          │
-│                                         │
-│   Round 1: Isolated critique (parallel) │
-│   Round 2: Challenges + rebuttals       │
-│   Round 3: Final vote                   │
-│                                         │
-│   ⚰️ Lowest performer → gallows         │
-└──────────────────┬──────────────────────┘
-       ▼
-┌─────────────┐
-│ REFINED PLAN │  Synthesis of all critiques → actionable plan
-└──────┬──────┘
-       ▼
-  Returned to agent for execution
-```
-
-## The Council Members
-
-| Crewmate | Color | Role | Evaluation Framework |
-|----------|-------|------|---------------------|
-| **RAZOR** | 🟥 Red | The Shipper | What's the fastest path? What can be deferred? What's the real effort? |
-| **GHOST** | 🟦 Blue | The Paranoid | What fails at 10x load? What's the rollback plan? What dependencies are risky? |
-| **SCOUT** | 🟩 Green | The Researcher | What existing solutions exist? What do benchmarks say? What's the adoption trend? |
-| **BISHOP** | 🟨 Yellow | The Architect | What's the dependency graph? Does this create coupling? What does this look like in 6 months? |
-
-Each member answers their framework questions **in isolation** before seeing any other member's position. This prevents convergence — you get four genuinely different perspectives.
-
-## The Reaper (Evolution)
-
-After every N decisions:
-- Each member's track record is scored (vote accuracy vs outcomes)
-- The lowest performer gets **executed** (gallows animation in the sandbox)
-- A new member spawns with mutated traits inherited from top performers
-- Lineage is tracked: `GHOST-v3 (descended from GHOST-v2 + RAZOR-v1)`
-
-## Anti-Convergence Design
-
-The #1 problem with multi-agent systems is that agents converge to the same answer. The Council prevents this structurally:
-
-1. **Isolated Round 1** — No member sees another's output. All calls run in parallel.
-2. **Forced evaluation frameworks** — Each member must answer different questions before reaching a conclusion.
-3. **Defection penalty** — Changing your vote between rounds costs reputation. Bandwagoning is punished.
-4. **Structured output** — JSON responses, not essays. Votes count, not word count.
-
-## MCP Tools
-
-```
-council_plan        Submit a prompt for council deliberation
-council_members     View current roster + track records
-council_history     Past decisions and outcomes
-council_override    Human corrects a verdict (feeds reaper scoring)
-council_sandbox     Get the live visualization URL
-```
-
 ## Tech Stack
 
-- **MCP Server**: Node.js / TypeScript
-- **Sandbox UI**: Next.js + Framer Motion
-- **Real-time**: WebSocket (server → UI event stream)
-- **LLM**: Claude via Anthropic API (parallel calls per council member)
-- **Web Search**: Recon phase context gathering
+| Component | Technology | Why |
+|-----------|-----------|-----|
+| MCP Server | Node.js / TypeScript | MCP SDK runs on Node, stdio transport |
+| Deliberation | Anthropic Claude API | Parallel calls per member, structured JSON output |
+| Sandbox UI | Next.js (static export) | Served directly by MCP server, no separate process |
+| Rendering | HTML5 Canvas | One room scene, no framework overhead |
+| Real-time | WebSocket | Server pushes events as deliberation progresses |
+| Port management | Auto-probe | Finds open port, never crashes on EADDRINUSE |
 
 ## Project Structure
 
 ```
 the-council/
-├── mcp-server/              # The MCP server (runtime primitive)
-│   ├── src/
-│   │   ├── index.ts         # MCP server entry + tool definitions
-│   │   ├── council.ts       # Deliberation engine
-│   │   ├── members.ts       # Member definitions + prompt templates
-│   │   ├── reaper.ts        # Evolution logic
-│   │   ├── recon.ts         # Web search context gathering
-│   │   ├── synthesis.ts     # Plan synthesis from critiques
-│   │   └── state.ts         # In-memory state + WebSocket broadcast
-│   ├── package.json
-│   └── tsconfig.json
+├── mcp-server/src/
+│   ├── index.ts         # MCP entry — 5 tools, stdout protection, env loading
+│   ├── council.ts       # Deliberation engine — recon → rounds → verdict → synthesis
+│   ├── members.ts       # 4 archetypes with forced evaluation frameworks
+│   ├── reaper.ts        # Evolution — score, execute, mutate, spawn
+│   ├── recon.ts         # Context gathering via web search
+│   ├── synthesis.ts     # Neutral clerk — compiles critiques into plan
+│   └── state.ts         # HTTP server + WebSocket + port management
 │
-├── sandbox/                 # Among Us visualization (demo UI)
-│   ├── src/
-│   │   ├── app/
-│   │   │   └── page.tsx     # Main sandbox view
-│   │   ├── components/
-│   │   │   ├── MeetingTable.tsx
-│   │   │   ├── Crewmate.tsx
-│   │   │   ├── SpeechBubble.tsx
-│   │   │   ├── VoteBar.tsx
-│   │   │   ├── Gallows.tsx
-│   │   │   ├── Leaderboard.tsx
-│   │   │   └── ReaperAnimation.tsx
-│   │   ├── hooks/
-│   │   │   └── useCouncilSocket.ts
-│   │   └── lib/
-│   │       └── types.ts
-│   ├── package.json
-│   └── next.config.js
+├── sandbox/src/
+│   ├── components/
+│   │   ├── MeetingRoom.tsx   # Canvas renderer — map, crewmates, animations
+│   │   ├── SpeechPanel.tsx   # Right sidebar — critiques, rebuttals, plan
+│   │   ├── VotePanel.tsx     # Vote bars with member dots
+│   │   ├── Gallows.tsx       # Execution display
+│   │   ├── Leaderboard.tsx   # Member rankings
+│   │   └── PhaseBar.tsx      # Phase progress indicator
+│   └── hooks/
+│       └── useCouncilSocket.ts  # WebSocket state management
 │
 ├── docs/
-│   ├── ARCHITECTURE.md      # Technical deep-dive
-│   ├── DELIBERATION.md      # How the council deliberates
-│   └── DEMO-SCRIPT.md       # 4-minute demo walkthrough
+│   ├── ARCHITECTURE.md
+│   ├── DELIBERATION.md
+│   └── DEMO-SCRIPT.md
 │
-└── README.md
+└── setup.sh             # One-command install
 ```
 
-## Hackathon Context
+## Side Quests
 
-- **Event**: Cursor Hack London 2026
+| Side Quest | How We Hit It |
+|-----------|---------------|
+| **Best Developer Tool** | Every developer has the "unchallenged plan" problem. One MCP call gives any agent a council. |
+| **Best Reliability System** | Full audit trail: every vote, every reason, every rebuttal, every defection. Human override feeds back into scoring. |
+| **Best Demo** | Among Us sandbox with real-time crewmate movement, typing documents, gallows executions. Judges watch the council deliberate live. |
+
+## Hackathon
+
+- **Event**: [Cursor Hack London 2026](https://cursorhacklondon2026.vercel.app/)
 - **Track**: C — Agent Runtime Tools
 - **Bounty**: #08 — "Make agents justify their decisions before they act"
-- **Side Quests**: Best Developer Tool, Best Reliability System, Best Demo
-- **Team Size**: 2
+- **Team**: 2 people, 5 hours
 
 ## License
 
