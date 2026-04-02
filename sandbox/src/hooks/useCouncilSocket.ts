@@ -35,7 +35,11 @@ const INITIAL_STATE: CouncilSocketState = {
   contextBrief: "",
 };
 
-export function useCouncilSocket(url: string = "ws://localhost:3099") {
+export function useCouncilSocket(url?: string) {
+  // Auto-detect: connect to the same host/port that served the page
+  const wsUrl = url ?? (typeof window !== "undefined"
+    ? `ws://${window.location.host}`
+    : "ws://localhost:3099");
   const wsRef = useRef<WebSocket | null>(null);
   const [state, setState] = useState<CouncilSocketState>(INITIAL_STATE);
   const [eventLog, setEventLog] = useState<SandboxEvent[]>([]);
@@ -45,7 +49,7 @@ export function useCouncilSocket(url: string = "ws://localhost:3099") {
   }, []);
 
   useEffect(() => {
-    const ws = new WebSocket(url);
+    const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
     ws.onopen = () => {
@@ -143,7 +147,7 @@ export function useCouncilSocket(url: string = "ws://localhost:3099") {
     return () => {
       ws.close();
     };
-  }, [url, pushEvent]);
+  }, [wsUrl, pushEvent]);
 
   return { ...state, eventLog };
 }

@@ -1,3 +1,5 @@
+import "dotenv/config";
+
 /**
  * Test harness: simulates a full council deliberation with mock LLM responses.
  * Verifies the entire pipeline: state management → WebSocket broadcast → sandbox UI.
@@ -386,7 +388,7 @@ async function runMockDeliberation(state: CouncilState) {
 // ─── Main ───
 async function main() {
   const state = new CouncilState();
-  state.startWebSocketServer(3099);
+  state.startServer(3099);
 
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   console.log("  THE COUNCIL — Test Harness");

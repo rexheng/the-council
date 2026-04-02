@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -6,8 +7,8 @@ import { deliberate } from "./council.js";
 
 const state = new CouncilState();
 
-// Start the sandbox WebSocket server
-state.startWebSocketServer(3099);
+// Start unified HTTP + WebSocket server (serves sandbox UI + real-time events)
+state.startServer(3099);
 
 const server = new McpServer({
   name: "the-council",
@@ -17,7 +18,7 @@ const server = new McpServer({
 // ─── council_plan ───
 server.tool(
   "council_plan",
-  "Submit a prompt for the council to deliberate on. The council will research context, generate a naive plan, then four AI council members with distinct engineering perspectives will independently critique it, debate, and vote. Returns a refined plan synthesized from their deliberation.",
+  "Submit a prompt for the council to deliberate on. The council will research context, generate a naive plan, then four AI council members with distinct engineering perspectives will independently critique it, debate, and vote. Returns a refined plan synthesized from their deliberation. Automatically opens the Among Us sandbox visualization in your browser.",
   {
     prompt: z.string().describe("The project or task prompt to plan for"),
     context: z
@@ -26,12 +27,16 @@ server.tool(
       .describe("Additional context to include in the deliberation"),
   },
   async ({ prompt, context }) => {
+    // Auto-open the sandbox on first call
+    state.openBrowser();
+
     try {
       const result = await deliberate(state, {
         prompt,
         context: context ?? undefined,
       });
 
+      const sandboxUrl = state.getSandboxUrl();
       return {
         content: [
           {
@@ -54,7 +59,7 @@ ${result.finalPlan}
 
 ---
 
-*Council sandbox: http://localhost:3000*
+*Council sandbox: ${sandboxUrl}*
 *Decision ${result.decisionId} logged to history*`,
           },
         ],
@@ -174,14 +179,16 @@ server.tool(
 // ─── council_sandbox ───
 server.tool(
   "council_sandbox",
-  "Get the URL for the live Among Us sandbox visualization where you can watch the council deliberate in real-time.",
+  "Open the Among Us sandbox visualization in your browser to watch the council deliberate in real-time.",
   {},
   async () => {
+    state.openBrowser();
+    const sandboxUrl = state.getSandboxUrl();
     return {
       content: [
         {
           type: "text",
-          text: `Sandbox UI: http://localhost:3000\nWebSocket: ws://localhost:3099\n\nOpen the sandbox URL in a browser to watch the council deliberate in real-time with Among Us-themed visuals.`,
+          text: `Sandbox opened at ${sandboxUrl}\n\nThe sandbox shows the council deliberation in real-time with Among Us-themed visuals: crewmates around a meeting table, speech bubbles, vote bars, and the gallows for underperformers.`,
         },
       ],
     };
@@ -193,7 +200,6 @@ async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error("[council] MCP server running on stdio");
-  console.error("[council] Sandbox WebSocket on ws://localhost:3099");
 }
 
 main().catch((error) => {

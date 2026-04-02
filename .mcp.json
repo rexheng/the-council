@@ -3,10 +3,7 @@
     "the-council": {
       "command": "npx",
       "args": ["tsx", "mcp-server/src/index.ts"],
-      "cwd": "/Users/viktorsmirnov/the-council",
-      "env": {
-        "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}"
-      }
+      "cwd": "/Users/viktorsmirnov/the-council"
     }
   }
 }
