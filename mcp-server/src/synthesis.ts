@@ -5,7 +5,7 @@ const client = new Anthropic();
 
 /**
  * The Clerk: a neutral synthesizer that compiles council deliberation
- * into a structured, actionable plan. Not a council member — no personality, no bias.
+ * into a structured, executable PRD. Not a council member — no personality, no bias.
  */
 export async function synthesizePlan(
   prompt: string,
@@ -41,11 +41,11 @@ Revised plan: ${p.revisedPlan}`,
 
   const response = await client.messages.create({
     model: "claude-sonnet-4-20250514",
-    max_tokens: 3000,
+    max_tokens: 4000,
     messages: [
       {
         role: "user",
-        content: `You are the Clerk — a neutral plan synthesizer. You have NO personality, NO bias. Your job is to compile the council's deliberation into the best possible plan.
+        content: `You are the Clerk — a neutral plan synthesizer. You have NO personality, NO bias. Your job is to compile the council's deliberation into a concrete, executable PRD that a coding agent can follow step by step.
 
 ═══ ORIGINAL PROMPT ═══
 ${prompt}
@@ -67,20 +67,21 @@ Winner: ${verdict.winningOption} (confidence: ${verdict.confidence.toFixed(2)})
 Vote breakdown: ${verdict.votes.map((v) => `${v.memberName}=${v.vote}`).join(", ")}
 
 ═══ YOUR TASK ═══
-Produce a FINAL PLAN that:
-1. Uses the winning revision as the base
-2. Incorporates valid concerns from ALL members (including dissenters)
-3. Flags unresolved disagreements as "⚠️ DISSENT" footnotes
-4. Is structured with clear phases, dependencies, and effort indicators
-5. Is actionable — a developer should be able to start building from this plan
+Produce a PRD (Product Requirements Document) that a coding agent will execute immediately. This is not a proposal — it's an instruction set.
 
-Format the plan as structured markdown with:
-- Numbered phases with clear deliverables
-- Dependencies between phases noted
-- Risk callouts from GHOST's concerns
-- Technology choices backed by SCOUT's research
-- Architecture notes from BISHOP's analysis
-- Timeline reality-checks from RAZOR's estimates`,
+FORMAT REQUIREMENTS:
+1. Start with a one-paragraph EXECUTIVE SUMMARY of what will be built
+2. List TECHNOLOGY DECISIONS as a table (decision | choice | rationale from council member)
+3. Break into numbered PHASES with:
+   - Clear deliverable for each phase
+   - Files/directories to create
+   - Dependencies on previous phases
+   - Acceptance criteria (how to verify this phase is done)
+4. Include RISK MITIGATIONS inline — where GHOST raised concerns, specify the safeguard
+5. Include DISSENT NOTES — where council members disagreed, note both positions so the implementing agent can make an informed call
+6. End with a DEFINITION OF DONE checklist
+
+The plan must be specific enough that an agent can start coding from Phase 1 without asking clarifying questions. Use concrete file paths, library names, and commands — not vague descriptions.`,
       },
     ],
   });

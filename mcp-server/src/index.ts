@@ -77,24 +77,34 @@ server.tool(
             type: "text",
             text: `# Council Deliberation Complete (${result.decisionId})
 
-## Verdict
-${result.verdict.winningOption} (confidence: ${(result.verdict.confidence * 100).toFixed(0)}%)
+## Council Verdict
+**Winner:** ${result.verdict.winningOption} (confidence: ${(result.verdict.confidence * 100).toFixed(0)}%)
 
-### Vote Breakdown
+**Votes:**
 ${result.verdict.votes.map((v) => `- **${v.memberName}**: ${v.vote} (confidence: ${(v.confidence * 100).toFixed(0)}%, weight: ${v.weight.toFixed(2)})`).join("\n")}
 
-${result.verdict.dissent.length > 0 ? `### Dissenting Opinions\n${result.verdict.dissent.map((d) => `- ${d}`).join("\n")}` : "### Unanimous Decision"}
+${result.verdict.dissent.length > 0 ? `**Dissenting opinions:**\n${result.verdict.dissent.map((d) => `- ${d}`).join("\n")}` : "*Unanimous decision*"}
 
 ---
 
-## Final Plan
+## APPROVED PLAN — EXECUTE THIS
+
+The following plan was debated by 4 council members, challenged through 2 rounds of deliberation, and synthesized from the winning position. Implement it as written. Where dissenting concerns are noted, add appropriate safeguards.
 
 ${result.finalPlan}
 
 ---
 
+## Instructions for Agent
+
+You MUST now execute the plan above. Treat it as your PRD. Work through each phase sequentially:
+1. Read the full plan above carefully
+2. Start with Phase 1 — do not skip ahead
+3. Where a council member's concern is noted (e.g. "GHOST: add error handling"), address it in your implementation
+4. If you encounter a decision point not covered by the plan, call \`council_plan\` again with the specific decision
+
 *Council sandbox: ${sandboxUrl}*
-*Decision ${result.decisionId} logged to history*`,
+*Decision ${result.decisionId} — override with \`council_override\` if the plan needs correction*`,
           },
         ],
       };
