@@ -706,6 +706,83 @@ export function MeetingRoom({ members, phase, positions, votes, reaper, finalPla
       }
     });
 
+    // ─── Phase announcement splash ───
+    const splashAge = frame - phaseStartFrame;
+    if (phase !== "idle" && splashAge < 80) {
+      const splashLabels: Record<CouncilPhase, { title: string; sub: string; color: string }> = {
+        idle: { title: "", sub: "", color: "" },
+        recon: { title: "RECON", sub: "GATHERING INTEL", color: "#4488ff" },
+        naive_plan: { title: "BASELINE", sub: "GENERATING PLAN", color: "#888888" },
+        round_1: { title: "ROUND 1", sub: "ISOLATION CHAMBER", color: "#ff4444" },
+        round_2: { title: "ROUND 2", sub: "CHALLENGES", color: "#ff8800" },
+        voting: { title: "VOTE", sub: "FINAL DECISION", color: "#ffcc00" },
+        verdict: { title: "VERDICT", sub: "DECISION REACHED", color: "#00ff66" },
+        synthesis: { title: "SYNTHESIS", sub: "COMPILING PRD", color: "#00ffaa" },
+        reaper: { title: "REAPER", sub: "EXECUTION TIME", color: "#ff0000" },
+      };
+
+      const splash = splashLabels[phase];
+      if (splash.title) {
+        // Fade: burst in, hold, fade out
+        const fadeIn = Math.min(1, splashAge / 10);
+        const fadeOut = Math.max(0, 1 - (splashAge - 50) / 30);
+        const alpha = Math.min(fadeIn, fadeOut);
+
+        // Scale: start big, settle to 1x
+        const scale = 1 + Math.max(0, 1 - splashAge / 15) * 0.8;
+
+        // Dark overlay behind
+        ctx.fillStyle = `rgba(0, 0, 0, ${alpha * 0.5})`;
+        ctx.fillRect(0, 0, CANVAS.WIDTH, CANVAS.HEIGHT);
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.translate(CANVAS.WIDTH / 2, CANVAS.HEIGHT / 2 - 20);
+        ctx.scale(scale, scale);
+
+        // Starburst rays
+        const rayCount = 12;
+        const rayLength = 120 + Math.sin(splashAge * 0.15) * 20;
+        for (let r = 0; r < rayCount; r++) {
+          const angle = (r / rayCount) * Math.PI * 2 + splashAge * 0.02;
+          ctx.strokeStyle = splash.color + "22";
+          ctx.lineWidth = 8;
+          ctx.beginPath();
+          ctx.moveTo(
+            Math.cos(angle) * 40,
+            Math.sin(angle) * 40,
+          );
+          ctx.lineTo(
+            Math.cos(angle) * rayLength,
+            Math.sin(angle) * rayLength,
+          );
+          ctx.stroke();
+        }
+
+        // Outer ring
+        ctx.strokeStyle = splash.color + "44";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, 0, 100 + Math.sin(splashAge * 0.1) * 10, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Main title
+        ctx.fillStyle = splash.color;
+        ctx.font = "bold 52px 'Courier New', monospace";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(splash.title, 0, -8);
+
+        // Subtitle
+        ctx.fillStyle = "#ffffffaa";
+        ctx.font = "bold 16px 'Courier New', monospace";
+        ctx.fillText(splash.sub, 0, 30);
+
+        ctx.textBaseline = "alphabetic";
+        ctx.restore();
+      }
+    }
+
     // Idle overlay — waiting for MCP call
     if (phase === "idle" && !finalPlan) {
       // Subtle pulsing overlay
