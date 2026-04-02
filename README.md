@@ -10,6 +10,30 @@ Built for [Cursor Hack London 2026](https://cursorhacklondon2026.vercel.app/) â€
 
 ---
 
+## Install (one command)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ViktorSmirnov71/the-council/main/setup.sh | bash
+```
+
+Or manually:
+
+```bash
+git clone https://github.com/ViktorSmirnov71/the-council.git
+cd the-council
+cd mcp-server && npm install && cd ..
+echo "ANTHROPIC_API_KEY=sk-ant-your-key" > .env
+cp .cursor/mcp.json.example .cursor/mcp.json  # edit with your key + path
+```
+
+Then open the folder in **Cursor** or **Claude Code** and ask:
+
+> _"Use council_plan to plan: build me Cursor, make no mistakes"_
+
+The Among Us sandbox opens automatically in your browser.
+
+---
+
 ## What Is This?
 
 The Council is an MCP server that intercepts planning requests and runs them through a deliberation sandbox before a single line of code is written.
