@@ -257,10 +257,6 @@ the-council/
 - **Bounty**: #08 — "Make agents justify their decisions before they act"
 - **Team**: 2 people, 5 hours
 
-## Attribution
-
-Originally built by [Viktor Smirnov](https://github.com/ViktorSmirnov71/the-council) at [Cursor Hack London 2026](https://cursorhacklondon2026.vercel.app/). This fork extends the original hackathon project.
-
 ## License
 
 MIT
