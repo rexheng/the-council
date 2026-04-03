@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCouncilSocket } from "@/hooks/useCouncilSocket";
 import { MeetingRoom } from "@/components/MeetingRoom";
 import { SpeechPanel } from "@/components/SpeechPanel";
@@ -13,24 +12,6 @@ export default function Home() {
 
   return (
     <div style={{ width: "100vw", height: "100vh", display: "flex", flexDirection: "column", position: "relative" }}>
-      <div
-        style={{
-          position: "absolute",
-          top: 10,
-          right: 12,
-          zIndex: 20,
-          display: "flex",
-          gap: 14,
-          fontSize: 12,
-        }}
-      >
-        <Link href="/tinder" style={{ color: "#ff6b9d", textDecoration: "none" }}>
-          Swipe demo →
-        </Link>
-        <Link href="/cursor" style={{ color: "#6cf", textDecoration: "none" }}>
-          Mini Cursor →
-        </Link>
-      </div>
       {/* Status bar */}
       <PhaseBar
         phase={council.phase}

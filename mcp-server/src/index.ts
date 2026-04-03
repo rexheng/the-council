@@ -15,23 +15,7 @@ process.stdout.write = function (chunk: any, ...args: any[]) {
   return _origStdoutWrite(chunk, ...args);
 } as typeof process.stdout.write;
 
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-
-// Load .env silently
-function loadEnvSilent(path: string) {
-  try {
-    const content = readFileSync(path, "utf-8");
-    for (const line of content.split("\n")) {
-      const match = line.match(/^\s*([^#=]+?)\s*=\s*(.*?)\s*$/);
-      if (match && !process.env[match[1]]) {
-        process.env[match[1]] = match[2];
-      }
-    }
-  } catch {}
-}
-loadEnvSilent(join(import.meta.dirname, "../../.env"));
-loadEnvSilent(join(import.meta.dirname, "../.env"));
+import "./load-env.js";
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";

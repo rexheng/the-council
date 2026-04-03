@@ -143,7 +143,7 @@ export class CouncilState {
       process.platform === "darwin"
         ? `open "${this.sandboxUrl}"`
         : process.platform === "win32"
-          ? `start "${this.sandboxUrl}"`
+          ? `start "" "${this.sandboxUrl}"`
           : `xdg-open "${this.sandboxUrl}"`;
 
     exec(cmd, (err) => {

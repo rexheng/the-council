@@ -182,13 +182,13 @@ Any MCP client (Cursor, Claude Code, etc.) can call these tools. The council is 
 **One command:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ViktorSmirnov71/the-council/main/setup.sh | bash
+curl -fsSL https://raw.githubusercontent.com/rexheng/the-council/main/setup.sh | bash
 ```
 
 **Or manually:**
 
 ```bash
-git clone https://github.com/ViktorSmirnov71/the-council.git
+git clone https://github.com/rexheng/the-council.git
 cd the-council
 cd mcp-server && npm install && cd ..
 echo "ANTHROPIC_API_KEY=sk-ant-your-key" > .env
@@ -256,6 +256,10 @@ the-council/
 - **Track**: C — Agent Runtime Tools
 - **Bounty**: #08 — "Make agents justify their decisions before they act"
 - **Team**: 2 people, 5 hours
+
+## Attribution
+
+Originally built by [Viktor Smirnov](https://github.com/ViktorSmirnov71/the-council) at [Cursor Hack London 2026](https://cursorhacklondon2026.vercel.app/). This fork extends the original hackathon project.
 
 ## License
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 # The Council — One-command setup
-# Usage: curl -fsSL https://raw.githubusercontent.com/ViktorSmirnov71/the-council/main/setup.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/rexheng/the-council/main/setup.sh | bash
 
 set -e
 
@@ -30,7 +30,7 @@ fi
 # Clone if not already in the repo
 if [ ! -f "mcp-server/package.json" ]; then
   echo "  Cloning the-council..."
-  git clone --depth 1 https://github.com/ViktorSmirnov71/the-council.git
+  git clone --depth 1 https://github.com/rexheng/the-council.git
   cd the-council
 else
   echo "  Already in the-council repo"

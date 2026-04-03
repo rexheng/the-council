@@ -30,7 +30,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ViktorSmirnov71/the-council"
+    "url": "https://github.com/rexheng/the-council"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
