@@ -1,4 +1,4 @@
-# The Council
+# Amogus
 
 **A decision layer for AI agents — structured multi-perspective deliberation via MCP.**
 
@@ -182,13 +182,13 @@ Any MCP client (Cursor, Claude Code, etc.) can call these tools. The council is 
 **One command:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/rexheng/the-council/main/setup.sh | bash
+curl -fsSL https://raw.githubusercontent.com/rexheng/amogus/main/setup.sh | bash
 ```
 
 **Or manually:**
 
 ```bash
-git clone https://github.com/rexheng/the-council.git
+git clone https://github.com/rexheng/amogus.git
 cd the-council
 cd mcp-server && npm install && cd ..
 echo "ANTHROPIC_API_KEY=sk-ant-your-key" > .env
