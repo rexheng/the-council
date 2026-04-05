@@ -3,7 +3,7 @@
     "the-council": {
       "command": "npx",
       "args": ["tsx", "mcp-server/src/index.ts"],
-      "cwd": "/Users/viktorsmirnov/the-council",
+      "cwd": "/path/to/amogus",
       "env": {
         "ANTHROPIC_API_KEY": "sk-ant-your-key-here"
       }

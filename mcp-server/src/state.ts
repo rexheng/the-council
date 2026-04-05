@@ -1,7 +1,10 @@
 import { createServer, IncomingMessage, ServerResponse } from "node:http";
 import { readFileSync, existsSync } from "node:fs";
-import { join, extname } from "node:path";
+import { dirname, join, extname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { exec } from "node:child_process";
+
+const __dirname = import.meta.dirname ?? dirname(fileURLToPath(import.meta.url));
 import { WebSocketServer, WebSocket } from "ws";
 import type { CouncilPhase, MemberState, DecisionRecord, SandboxEvent } from "./types.js";
 import { createDefaultMembers } from "./members.js";
@@ -58,8 +61,8 @@ export class CouncilState {
 
     // Resolve the static sandbox build directory
     const candidates = [
-      join(import.meta.dirname, "../sandbox-ui"),
-      join(import.meta.dirname, "../../sandbox/out"),
+      join(__dirname, "../sandbox-ui"),
+      join(__dirname, "../../sandbox/out"),
     ];
     const sandboxDir = candidates.find((d) => existsSync(join(d, "index.html"))) ?? candidates[0];
     const hasSandbox = existsSync(join(sandboxDir, "index.html"));
@@ -75,7 +78,12 @@ export class CouncilState {
         return;
       }
 
-      let filePath = join(sandboxDir, req.url === "/" ? "index.html" : req.url!);
+      let filePath = resolve(sandboxDir, (req.url === "/" ? "index.html" : req.url!).replace(/^\//, ""));
+      if (!filePath.startsWith(resolve(sandboxDir))) {
+        res.writeHead(403);
+        res.end("Forbidden");
+        return;
+      }
 
       if (!extname(filePath) && !existsSync(filePath)) {
         filePath += ".html";

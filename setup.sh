@@ -31,7 +31,7 @@ fi
 if [ ! -f "mcp-server/package.json" ]; then
   echo "  Cloning the-council..."
   git clone --depth 1 https://github.com/rexheng/amogus.git
-  cd the-council
+  cd amogus
 else
   echo "  Already in the-council repo"
 fi
